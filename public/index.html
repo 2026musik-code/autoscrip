@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VPS Auto Installer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .terminal {
+            background-color: #1e1e1e;
+            color: #00ff00;
+            font-family: 'Courier New', Courier, monospace;
+            padding: 1rem;
+            height: 300px;
+            overflow-y: auto;
+            border-radius: 0.5rem;
+            white-space: pre-wrap;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <header class="text-center mb-10">
+            <h1 class="text-3xl font-bold text-yellow-400 mb-2">VPS Auto Installer</h1>
+            <p class="text-gray-400">Deploy Tunneling Script to Debian/Ubuntu VPS</p>
+        </header>
+
+        <!-- Main Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+            <!-- Install Form -->
+            <div class="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700">
+                <h2 class="text-xl font-semibold mb-4 text-yellow-400"><i class="fas fa-rocket mr-2"></i> New Installation</h2>
+                <form id="installForm" class="space-y-4">
+                    <div class="grid grid-cols-3 gap-2">
+                        <div class="col-span-2">
+                            <label class="block text-sm text-gray-400 mb-1">VPS IP Address</label>
+                            <input type="text" id="ip" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:border-yellow-400 focus:outline-none" placeholder="1.2.3.4" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Port</label>
+                            <input type="number" id="port" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:border-yellow-400 focus:outline-none" value="22">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Username</label>
+                        <input type="text" id="username" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:border-yellow-400 focus:outline-none" value="root" required>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Password (or Key)</label>
+                        <input type="password" id="password" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:border-yellow-400 focus:outline-none" placeholder="Root Password">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Private Key (Optional)</label>
+                        <textarea id="privateKey" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:border-yellow-400 focus:outline-none text-xs" rows="2" placeholder="-----BEGIN RSA PRIVATE KEY-----..."></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Domain Name</label>
+                        <input type="text" id="domain" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:border-yellow-400 focus:outline-none" placeholder="vpn.example.com" required>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Operating System</label>
+                        <select id="os" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:border-yellow-400 focus:outline-none">
+                            <option value="debian">Debian 10/11/12</option>
+                            <option value="ubuntu">Ubuntu 20.04/22.04</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" id="installBtn" class="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-3 rounded transition duration-200">
+                        <i class="fas fa-download mr-2"></i> INSTALL AUTOMATIS
+                    </button>
+                </form>
+            </div>
+
+            <!-- Terminal & Status -->
+            <div class="flex flex-col space-y-6">
+
+                <!-- Terminal -->
+                <div class="bg-gray-800 p-4 rounded-xl shadow-lg border border-gray-700 flex-grow">
+                    <div class="flex justify-between items-center mb-2">
+                        <h2 class="text-sm font-semibold text-gray-400">Installation Log</h2>
+                        <button onclick="clearLog()" class="text-xs text-gray-500 hover:text-white">Clear</button>
+                    </div>
+                    <div id="terminal" class="terminal">Waiting for action...</div>
+                </div>
+
+                <!-- Latest Success -->
+                <div id="successCard" class="bg-green-900 bg-opacity-20 p-6 rounded-xl border border-green-700 hidden">
+                    <h3 class="text-green-400 font-bold text-lg mb-2"><i class="fas fa-check-circle mr-2"></i> Installation Successful!</h3>
+                    <div class="space-y-1 text-sm">
+                        <p><span class="text-gray-400">Domain:</span> <span id="resDomain" class="font-mono font-bold text-white"></span></p>
+                        <p><span class="text-gray-400">Admin URL:</span> <a id="resUrl" href="#" target="_blank" class="text-blue-400 hover:underline break-all"></a></p>
+                        <p><span class="text-gray-400">Admin Pass (UUID):</span> <span id="resUuid" class="font-mono text-yellow-300 break-all select-all"></span></p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- History Table -->
+        <div class="mt-12">
+            <h2 class="text-2xl font-bold text-yellow-400 mb-4"><i class="fas fa-history mr-2"></i> Installation History</h2>
+            <div class="bg-gray-800 rounded-xl shadow-lg border border-gray-700 overflow-x-auto">
+                <table class="w-full text-left text-sm text-gray-400">
+                    <thead class="bg-gray-700 text-gray-200 uppercase">
+                        <tr>
+                            <th class="px-6 py-3">Date</th>
+                            <th class="px-6 py-3">Domain</th>
+                            <th class="px-6 py-3">IP</th>
+                            <th class="px-6 py-3">Admin Info</th>
+                            <th class="px-6 py-3 text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTable" class="divide-y divide-gray-700">
+                        <!-- Rows injected via JS -->
+                    </tbody>
+                </table>
+                <div id="emptyHistory" class="p-6 text-center text-gray-500">No history found.</div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const socket = io();
+        const terminal = document.getElementById('terminal');
+        const form = document.getElementById('installForm');
+        const btn = document.getElementById('installBtn');
+        const successCard = document.getElementById('successCard');
+
+        // Log Helper
+        function log(msg) {
+            terminal.textContent += msg;
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        function clearLog() {
+            terminal.textContent = '';
+        }
+
+        socket.on('log', (data) => {
+            log(data);
+        });
+
+        socket.on('install_success', (data) => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-download mr-2"></i> INSTALL AUTOMATIS';
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+
+            // Show Success Card
+            document.getElementById('resDomain').textContent = data.domain;
+            document.getElementById('resUrl').href = data.adminUrl;
+            document.getElementById('resUrl').textContent = data.adminUrl;
+            document.getElementById('resUuid').textContent = data.adminPass;
+            successCard.classList.remove('hidden');
+
+            loadHistory();
+        });
+
+        socket.on('install_error', (msg) => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-download mr-2"></i> INSTALL AUTOMATIS';
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            log(`\n[ERROR] ${msg}\n`);
+        });
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const ip = document.getElementById('ip').value;
+            const port = document.getElementById('port').value;
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const privateKey = document.getElementById('privateKey').value;
+            const domain = document.getElementById('domain').value;
+            const os = document.getElementById('os').value;
+
+            if(!ip || !username || !domain) {
+                alert('Please fill in required fields');
+                return;
+            }
+            if(!password && !privateKey) {
+                alert('Please provide Password or Private Key');
+                return;
+            }
+
+            // Reset UI
+            successCard.classList.add('hidden');
+            clearLog();
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Installing...';
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+
+            socket.emit('start_install', {
+                ip, port, username, password, privateKey, domain, os
+            });
+        });
+
+        // History Management
+        async function loadHistory() {
+            const res = await fetch('/api/history');
+            const data = await res.json();
+            const tbody = document.getElementById('historyTable');
+            const empty = document.getElementById('emptyHistory');
+
+            tbody.innerHTML = '';
+            if(data.length > 0) {
+                empty.style.display = 'none';
+                data.reverse().forEach(item => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-gray-700 transition';
+                    tr.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap">${new Date(item.date).toLocaleString()}</td>
+                        <td class="px-6 py-4 font-bold text-white">${item.domain}</td>
+                        <td class="px-6 py-4">${item.ip}</td>
+                        <td class="px-6 py-4 text-xs">
+                            <a href="${item.adminUrl}" target="_blank" class="text-blue-400 hover:underline">Link</a><br>
+                            <span class="text-gray-500 select-all">${item.adminPass}</span>
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <button onclick="deleteHistory('${item.id}')" class="text-red-400 hover:text-red-300">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } else {
+                empty.style.display = 'block';
+            }
+        }
+
+        async function deleteHistory(id) {
+            if(!confirm('Delete this record?')) return;
+            await fetch(`/api/history/${id}`, { method: 'DELETE' });
+            loadHistory();
+        }
+
+        // Init
+        loadHistory();
+
+    </script>
+</body>
+</html>
