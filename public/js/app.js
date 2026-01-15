@@ -11,6 +11,7 @@ form.addEventListener('submit', async (e) => {
     const authType = document.getElementById('authType').value;
     const privateKey = document.getElementById('privateKey').value;
     const domain = document.getElementById('domain').value;
+    const licenseToken = document.getElementById('licenseToken').value;
     const os = document.getElementById('os').value;
 
     logBox.style.display = 'block';
@@ -23,7 +24,7 @@ form.addEventListener('submit', async (e) => {
                 'Content-Type': 'application/json',
                 'x-socket-id': socket.id
             },
-            body: JSON.stringify({ ip, username, password, privateKey, authType, domain, os })
+            body: JSON.stringify({ ip, username, password, privateKey, authType, domain, os, licenseToken })
         });
 
         const result = await response.json();

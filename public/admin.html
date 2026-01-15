@@ -19,8 +19,37 @@
         </div>
 
         <div id="dashboardSection" style="display:none;">
-            <h2>Managed Servers</h2>
-            <div id="serverList"></div>
+            <div style="display: flex; gap: 20px;">
+                <div style="flex: 2;">
+                    <h2>Managed Servers</h2>
+                    <div id="serverList"></div>
+                </div>
+                <div style="flex: 1; border-left: 1px solid #333; padding-left: 20px;">
+                    <h2>License Management</h2>
+                    <div class="card" style="background:#252525; padding:15px; border-radius:5px;">
+                        <h3>Generate New Token</h3>
+                        <div class="form-group">
+                            <label>Duration</label>
+                            <select id="licMonths">
+                                <option value="1">1 Month</option>
+                                <option value="2">2 Months</option>
+                                <option value="3">3 Months</option>
+                                <option value="6">6 Months</option>
+                                <option value="12">1 Year</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Note (Optional)</label>
+                            <input type="text" id="licNote" placeholder="Buyer Name etc.">
+                        </div>
+                        <button onclick="generateLicense()">GENERATE TOKEN</button>
+                    </div>
+
+                    <h3>Active Licenses</h3>
+                    <div id="licenseList" style="max-height: 400px; overflow-y: auto;"></div>
+                </div>
+            </div>
+
             <br>
             <a href="index.html" style="color:#aaa;">&larr; Back to Installer</a>
         </div>
@@ -73,6 +102,63 @@
                 const servers = await res.json();
                 renderServers(servers);
             }
+            loadLicenses();
+        }
+
+        async function loadLicenses() {
+            const res = await fetch(`${API_URL}/admin/licenses`, {
+                 headers: { 'x-admin-key': adminKey }
+            });
+            if (res.ok) {
+                const licenses = await res.json();
+                renderLicenses(licenses);
+            }
+        }
+
+        async function generateLicense() {
+            const months = document.getElementById('licMonths').value;
+            const note = document.getElementById('licNote').value;
+
+            const res = await fetch(`${API_URL}/admin/generate-license`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-admin-key': adminKey
+                },
+                body: JSON.stringify({ months, note })
+            });
+
+            if(res.ok) {
+                alert('License Generated!');
+                loadLicenses();
+            } else {
+                alert('Error generating license');
+            }
+        }
+
+        function renderLicenses(licenses) {
+            const list = document.getElementById('licenseList');
+            list.innerHTML = '';
+            // Show Unused first
+            licenses.sort((a,b) => (a.is_used === b.is_used) ? 0 : a.is_used ? 1 : -1);
+
+            licenses.forEach(l => {
+                const div = document.createElement('div');
+                div.style.borderBottom = '1px solid #333';
+                div.style.padding = '10px 0';
+                div.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <code style="color:${l.is_used ? '#888' : '#0f0'}; font-weight:bold; font-size:1.1rem;">${l.token}</code>
+                        <span style="font-size:0.8rem; background:${l.is_used ? '#444' : '#28a745'}; padding:2px 5px; border-radius:3px;">${l.is_used ? 'USED' : 'NEW'}</span>
+                    </div>
+                    <div style="font-size:0.8rem; color:#aaa; margin-top:5px;">
+                        Duration: ${l.months} Month(s)<br>
+                        ${l.note ? `Note: ${l.note}<br>` : ''}
+                        ${l.is_used ? `Used By: ${l.used_by_domain}` : ''}
+                    </div>
+                `;
+                list.appendChild(div);
+            });
         }
 
         function renderServers(servers) {
@@ -82,9 +168,15 @@
             servers.forEach(s => {
                 const div = document.createElement('div');
                 div.className = 'server-card';
+
+                const statusColor = s.status === 'expired' ? 'red' : 'inherit';
+                const expiryInfo = s.expires_at ? `<br><span style="color:${statusColor}">Expires: ${s.expires_at}</span>` : '';
+
                 div.innerHTML = `
                     <div>
-                        <strong>${s.domain}</strong> (${s.ip})<br>
+                        <strong>${s.domain}</strong> (${s.ip})
+                        ${expiryInfo}
+                        <br>
                         <small style="color:#888;">Installed: ${new Date(s.installed_at).toLocaleString()}</small>
                     </div>
                     <div>
