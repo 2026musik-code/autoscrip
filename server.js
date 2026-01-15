@@ -48,6 +48,7 @@ function authMiddleware(req, res, next) {
     if (key === ADMIN_KEY) {
         next();
     } else {
+        console.warn(`[Auth Failed] IP: ${req.ip}. Received Key: '${key}', Expected: '${ADMIN_KEY}'`);
         res.status(403).json({ error: 'Unauthorized: Invalid Admin Key' });
     }
 }
@@ -306,4 +307,5 @@ app.post('/api/token', authMiddleware, (req, res) => {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
+    console.log(`[INFO] Admin Key configured: '${ADMIN_KEY}'`);
 });
