@@ -53,6 +53,20 @@ A web-based application to automate the installation of tunneling scripts (Xray,
 5.  **Access the Web Interface**
     Open your browser and navigate to `http://localhost:3000`.
 
+## VPS One-Click Installation (Recommended)
+
+To install the panel directly on your VPS with a single command:
+
+```bash
+bash <(curl -Ls https://raw.githubusercontent.com/2026musik-code/autoscrip/main/setup.sh)
+```
+
+This will:
+1. Install Node.js and dependencies.
+2. Setup the Web Panel on port 3000.
+3. Generate a secure **Admin Key**.
+4. Start the service automatically.
+
 ## Docker Deployment (Northflank / Railway / Etc.)
 
 This project includes a `Dockerfile` for easy deployment.
