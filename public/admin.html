@@ -48,7 +48,7 @@
         let adminKey = '';
 
         async function login() {
-            const key = document.getElementById('adminKey').value;
+            const key = document.getElementById('adminKey').value.trim();
             // Verify Key by fetching servers
             const res = await fetch(`${API_URL}/servers`, {
                 headers: { 'x-admin-key': key }
