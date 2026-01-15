@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const { Client } = require('ssh2');
+require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
