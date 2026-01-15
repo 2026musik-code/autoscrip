@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VPS Auto Installer</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>VPS Auto Installer</h1>
+        <p style="text-align:center; color:#888;">Install Tunneling Script Automatically</p>
+
+        <form id="installForm">
+            <div class="form-group">
+                <label>VPS IP Address</label>
+                <input type="text" id="ip" required placeholder="127.0.0.1">
+            </div>
+
+            <div class="form-group">
+                <label>VPS Username</label>
+                <input type="text" id="username" value="root" required>
+            </div>
+
+            <div class="form-group">
+                <label>Authentication Type</label>
+                <select id="authType" onchange="toggleAuth()">
+                    <option value="password">Password</option>
+                    <option value="key">SSH Private Key</option>
+                </select>
+            </div>
+
+            <div class="form-group" id="passGroup">
+                <label>VPS Password</label>
+                <input type="password" id="password" placeholder="Enter root password">
+            </div>
+
+            <div class="form-group" id="keyGroup" style="display:none;">
+                <label>Private Key (Paste Content)</label>
+                <textarea id="privateKey" rows="5" placeholder="-----BEGIN OPENSSH PRIVATE KEY-----..." style="background:#2c2c2c; color:#fff; border:1px solid #444; width:100%;"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Domain Name</label>
+                <input type="text" id="domain" required placeholder="vpn.example.com">
+            </div>
+
+            <div class="form-group">
+                <label>Operating System</label>
+                <select id="os">
+                    <option value="debian">Debian 10/11/12</option>
+                    <option value="ubuntu">Ubuntu 20.04/22.04</option>
+                </select>
+            </div>
+
+            <button type="submit">START INSTALLATION</button>
+        </form>
+
+        <div id="logBox" class="log-box"></div>
+
+        <div style="text-align: center; margin-top: 20px;">
+            <a href="admin.html" style="color: #666; font-size: 0.9rem;">Admin Panel</a>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        function toggleAuth() {
+            const type = document.getElementById('authType').value;
+            if(type === 'password') {
+                document.getElementById('passGroup').style.display = 'block';
+                document.getElementById('keyGroup').style.display = 'none';
+            } else {
+                document.getElementById('passGroup').style.display = 'none';
+                document.getElementById('keyGroup').style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>

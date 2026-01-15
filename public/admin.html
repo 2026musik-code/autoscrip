@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - VPS Manager</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Admin Panel</h1>
+
+        <div id="loginSection">
+            <div class="form-group">
+                <label>Admin Secret Key</label>
+                <input type="password" id="adminKey" placeholder="Enter Admin Key">
+            </div>
+            <button onclick="login()">LOGIN</button>
+        </div>
+
+        <div id="dashboardSection" style="display:none;">
+            <h2>Managed Servers</h2>
+            <div id="serverList"></div>
+            <br>
+            <a href="index.html" style="color:#aaa;">&larr; Back to Installer</a>
+        </div>
+    </div>
+
+    <!-- Stats Modal -->
+    <div id="statsModal">
+        <div id="statsContent">
+            <h2>Server Monitoring</h2>
+            <pre id="monitorOutput" style="color:#0f0; background:#000; padding:10px; overflow-x:auto;"></pre>
+
+            <h3>Token Management</h3>
+            <div class="form-group">
+                 <input type="text" id="newToken" placeholder="New Token">
+                 <input type="number" id="newOwnerId" placeholder="PIN (Owner ID)">
+                 <button onclick="addToken()" style="width:auto; padding:8px;">Add Token</button>
+            </div>
+
+            <button onclick="closeModal()" style="background:#555;">CLOSE</button>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = '/api';
+        let adminKey = '';
+
+        async function login() {
+            const key = document.getElementById('adminKey').value;
+            // Verify Key by fetching servers
+            const res = await fetch(`${API_URL}/servers`, {
+                headers: { 'x-admin-key': key }
+            });
+
+            if (res.ok) {
+                adminKey = key;
+                document.getElementById('loginSection').style.display = 'none';
+                document.getElementById('dashboardSection').style.display = 'block';
+                const servers = await res.json();
+                renderServers(servers);
+            } else {
+                alert('Invalid Admin Key!');
+            }
+        }
+
+        async function loadServers() {
+            const res = await fetch(`${API_URL}/servers`, {
+                 headers: { 'x-admin-key': adminKey }
+            });
+            if (res.ok) {
+                const servers = await res.json();
+                renderServers(servers);
+            }
+        }
+
+        function renderServers(servers) {
+            const list = document.getElementById('serverList');
+            list.innerHTML = '';
+
+            servers.forEach(s => {
+                const div = document.createElement('div');
+                div.className = 'server-card';
+                div.innerHTML = `
+                    <div>
+                        <strong>${s.domain}</strong> (${s.ip})<br>
+                        <small style="color:#888;">Installed: ${new Date(s.installed_at).toLocaleString()}</small>
+                    </div>
+                    <div>
+                        <button class="btn-info" onclick="monitorServer(${s.id})">Monitor</button>
+                        <button class="btn-danger" onclick="deleteServer(${s.id})">Delete</button>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        async function deleteServer(id) {
+            if(!confirm('Are you sure?')) return;
+            await fetch(`${API_URL}/servers/${id}`, {
+                method: 'DELETE',
+                headers: { 'x-admin-key': adminKey }
+            });
+            loadServers();
+        }
+
+        let currentServerId = null;
+
+        async function monitorServer(id) {
+            currentServerId = id;
+            document.getElementById('statsModal').style.display = 'flex';
+            document.getElementById('monitorOutput').innerText = 'Fetching data...';
+
+            const res = await fetch(`${API_URL}/monitor`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-admin-key': adminKey
+                },
+                body: JSON.stringify({ id })
+            });
+            if (!res.ok) return alert('Error fetching data');
+            const data = await res.json();
+            document.getElementById('monitorOutput').innerText = data.raw || JSON.stringify(data, null, 2);
+        }
+
+        async function addToken() {
+            const token = document.getElementById('newToken').value;
+            const ownerId = document.getElementById('newOwnerId').value;
+            if(!token || !ownerId) return alert('Fill all fields');
+
+            const res = await fetch(`${API_URL}/token`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-admin-key': adminKey
+                },
+                body: JSON.stringify({
+                    id: currentServerId,
+                    action: 'add',
+                    tokenData: { token, owner_id: ownerId }
+                })
+            });
+            const data = await res.json();
+            if(data.success) {
+                alert('Token Added!');
+                document.getElementById('monitorOutput').innerText += `\n[Success] Token ${token} added.`;
+            } else {
+                alert('Error adding token');
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('statsModal').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
