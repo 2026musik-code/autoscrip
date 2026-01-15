@@ -1,3 +1,12 @@
 {
-  "servers": []
+  "servers": [],
+  "licenseTokens": [
+    {
+      "token": "LIC-085F5927",
+      "months": 1,
+      "created_at": "2026-01-15T11:29:59.081Z",
+      "is_used": false,
+      "note": ""
+    }
+  ]
 }
