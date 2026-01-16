@@ -8,7 +8,12 @@
 </head>
 <body>
     <div class="container">
-        <h1>Admin Panel</h1>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h1>Admin Panel</h1>
+            <button id="updateBtn" onclick="updateWebPanel()" style="width:auto; display:none; background:#007bff; font-size:0.8rem; padding:8px 15px;">
+                <i class="fas fa-sync"></i> Update Web
+            </button>
+        </div>
 
         <div id="loginSection">
             <div class="form-group">
@@ -87,6 +92,7 @@
                 adminKey = key;
                 document.getElementById('loginSection').style.display = 'none';
                 document.getElementById('dashboardSection').style.display = 'block';
+                document.getElementById('updateBtn').style.display = 'block';
                 const servers = await res.json();
                 renderServers(servers);
             } else {
@@ -133,6 +139,34 @@
                 loadLicenses();
             } else {
                 alert('Error generating license');
+            }
+        }
+
+        async function updateWebPanel() {
+            if(!confirm('This will update the web panel from GitHub and restart the server. Continue?')) return;
+
+            const btn = document.getElementById('updateBtn');
+            btn.innerHTML = 'Updating...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(`${API_URL}/admin/update-web`, {
+                    method: 'POST',
+                    headers: { 'x-admin-key': adminKey }
+                });
+                const data = await res.json();
+
+                if(res.ok) {
+                    alert('Update Success: ' + data.message + '\nLog: ' + (data.log || '').substring(0, 100) + '...');
+                    location.reload();
+                } else {
+                    alert('Update Failed: ' + data.error);
+                }
+            } catch (e) {
+                alert('Update Error: ' + e.message);
+            } finally {
+                btn.innerHTML = '<i class="fas fa-sync"></i> Update Web';
+                btn.disabled = false;
             }
         }
 
