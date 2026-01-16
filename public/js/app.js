@@ -78,6 +78,8 @@ socket.on('log', (msg) => {
 socket.on('status', (msg) => {
     if (msg.status === 'success') {
         const { domain, uuid, adminUrl } = msg.data;
+        const publicUrl = `https://${domain}`;
+
         const successModal = document.createElement('div');
         successModal.style.position = 'fixed';
         successModal.style.top = '0';
@@ -91,16 +93,57 @@ socket.on('status', (msg) => {
         successModal.style.zIndex = '1000';
 
         successModal.innerHTML = `
-            <div style="background: #222; padding: 30px; border-radius: 10px; border: 2px solid #0f0; max-width: 500px; text-align: center; color: white;">
-                <h2 style="color: #0f0;">INSTALLATION SUCCESSFUL!</h2>
-                <p><strong>Domain:</strong> ${domain}</p>
-                <p><strong>Admin UUID (Password):</strong> <br><code style="background:#444; padding:5px; display:block; margin:10px 0;">${uuid}</code></p>
-                <a href="${adminUrl}" target="_blank" style="display:inline-block; background:#ffd700; color:black; padding:10px 20px; text-decoration:none; font-weight:bold; border-radius:5px; margin-top:10px;">OPEN ADMIN LOGIN</a>
-                <br><br>
-                <button onclick="this.closest('div').parentElement.remove()" style="background:#555; color:white; border:none; padding:5px 10px; cursor:pointer;">Close</button>
+            <div style="background: #1e1e1e; padding: 0; border-radius: 12px; border: 1px solid #333; width: 90%; max-width: 500px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5); color: #e0e0e0; font-family: 'Segoe UI', sans-serif;">
+                <div style="background: #28a745; color: white; padding: 20px; text-align: center;">
+                    <h2 style="margin:0; font-size: 1.5rem;">INSTALLATION SUCCESSFUL</h2>
+                    <p style="margin:5px 0 0 0; opacity: 0.9;">VPS is ready to use</p>
+                </div>
+
+                <div style="padding: 25px;">
+                    <div style="margin-bottom: 20px;">
+                        <label style="color:#888; font-size:0.85rem; display:block; margin-bottom:5px;">DOMAIN</label>
+                        <div style="background:#2c2c2c; padding:10px; border-radius:5px; font-weight:bold; color:#fff;">${domain}</div>
+                    </div>
+
+                    <div style="display:flex; gap:10px; margin-bottom:20px;">
+                        <div style="flex:1;">
+                            <label style="color:#888; font-size:0.85rem; display:block; margin-bottom:5px;">PUBLIC PANEL</label>
+                            <a href="${publicUrl}" target="_blank" style="display:block; background:#007bff; color:white; text-decoration:none; padding:10px; border-radius:5px; text-align:center; font-weight:bold;">
+                                Open Dashboard
+                            </a>
+                        </div>
+                        <div style="flex:1;">
+                            <label style="color:#888; font-size:0.85rem; display:block; margin-bottom:5px;">ADMIN PANEL</label>
+                            <a href="${adminUrl}" target="_blank" style="display:block; background:#ffd700; color:black; text-decoration:none; padding:10px; border-radius:5px; text-align:center; font-weight:bold;">
+                                Admin Login
+                            </a>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 25px;">
+                        <label style="color:#888; font-size:0.85rem; display:block; margin-bottom:5px;">ADMIN UUID (PASSWORD)</label>
+                        <div style="display:flex; background:#2c2c2c; border-radius:5px; overflow:hidden; border:1px solid #444;">
+                            <input type="text" value="${uuid}" readonly style="flex:1; background:none; border:none; color:#0f0; padding:10px; font-family:monospace; font-size:1.1rem; outline:none;" id="uuidField">
+                            <button onclick="copyUuid()" style="background:#444; color:white; border:none; padding:0 15px; cursor:pointer; font-weight:bold; margin:0;">COPY</button>
+                        </div>
+                    </div>
+
+                    <button onclick="this.closest('div').parentElement.remove()" style="width:100%; background:transparent; border:1px solid #555; color:#aaa; padding:12px; border-radius:5px; cursor:pointer;">Close Window</button>
+                </div>
             </div>
         `;
         document.body.appendChild(successModal);
+
+        // Add Helper Function specifically for this modal context if needed
+        // But we can define it globally or attach to window.
+        window.copyUuid = function() {
+            const copyText = document.getElementById("uuidField");
+            copyText.select();
+            copyText.setSelectionRange(0, 99999);
+            navigator.clipboard.writeText(copyText.value).then(() => {
+                alert("UUID Copied to Clipboard!");
+            });
+        };
 
     } else if (msg.status === 'error') {
         alert('Installation Failed! Check logs.');
