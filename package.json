@@ -20,12 +20,13 @@
   "homepage": "https://github.com/2026musik-code/autoscrip#readme",
   "dependencies": {
     "body-parser": "^2.2.2",
+    "child_process": "^1.0.2",
     "cors": "^2.8.5",
     "crypto-js": "^4.2.0",
-    "dotenv": "^17.2.3",
-    "express": "^5.2.1",
+    "dotenv": "^16.6.1",
+    "express": "^4.22.1",
     "socket.io": "^4.8.3",
     "ssh2": "^1.17.0",
-    "uuid": "^13.0.0"
+    "uuid": "^9.0.1"
   }
 }

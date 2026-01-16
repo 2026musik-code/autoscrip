@@ -2,6 +2,19 @@
 > app@1.0.0 start
 > node server.js
 
-[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  enable debug logging with { debug: true }
+[dotenv@17.2.3] injecting env (0) from .env -- tip: 👥 sync secrets across teammates & machines: https://dotenvx.com/ops
 Server running on port 3000
 [INFO] Admin Key configured: 'secret123'
+[Update] Starting Web Panel update...
+[Update] Error: From https://github.com/2026musik-code/autoscrip
+   b6751fc..2fed846  main       -> origin/main
+ * [new branch]      web-auto-install-13353385067046133533 -> origin/web-auto-install-13353385067046133533
+There is no tracking information for the current branch.
+Please specify which branch you want to merge with.
+See git-pull(1) for details.
+
+    git pull <remote> <branch>
+
+If you wish to set tracking information for this branch you can do so with:
+
+    git branch --set-upstream-to=origin/<branch> jules-13353385067046133533-ed0c398d

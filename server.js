@@ -9,6 +9,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const CryptoJS = require("crypto-js");
 const { v4: uuidv4 } = require('uuid');
+const { exec } = require('child_process');
 
 const app = express();
 const server = http.createServer(app);
@@ -90,6 +91,36 @@ app.post('/api/admin/generate-license', authMiddleware, (req, res) => {
 app.get('/api/admin/licenses', authMiddleware, (req, res) => {
     const db = getDB();
     res.json(db.licenseTokens);
+});
+
+// Admin API: Update Web Panel
+app.post('/api/admin/update-web', authMiddleware, (req, res) => {
+    console.log('[Update] Starting Web Panel update...');
+
+    // Command sequence: git pull -> npm install -> restart
+    // Note: Restarting process inside Docker/PM2 is usually done by exiting.
+    // If we are in a container, exiting process (1) usually triggers restart policy.
+    // If managed by PM2, `pm2 restart` or exit works.
+
+    const cmd = 'git pull origin main && npm install';
+
+    exec(cmd, (err, stdout, stderr) => {
+        if (err) {
+            console.error('[Update] Error:', stderr);
+            return res.status(500).json({ error: 'Update Failed: ' + stderr });
+        }
+
+        console.log('[Update] Output:', stdout);
+
+        // Respond first, then restart
+        res.json({ message: 'Update successful! Restarting server...', log: stdout });
+
+        // Wait a second for response to flush, then exit to force restart
+        setTimeout(() => {
+            console.log('[Update] Restarting...');
+            process.exit(0); // Docker/PM2 should auto-restart this
+        }, 1500);
+    });
 });
 
 // Installation Endpoint
@@ -375,6 +406,8 @@ app.post('/api/token', authMiddleware, (req, res) => {
 
 // --- EXPIRATION CHECKER ---
 // Runs every 24 hours to check for expired licenses
+// Also run immediately on startup
+setTimeout(checkExpiredLicenses, 10000); // 10s delay on start
 setInterval(checkExpiredLicenses, 24 * 60 * 60 * 1000);
 
 async function checkExpiredLicenses() {
