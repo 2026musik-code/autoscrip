@@ -18,3 +18,7 @@ See git-pull(1) for details.
 If you wish to set tracking information for this branch you can do so with:
 
     git branch --set-upstream-to=origin/<branch> jules-13353385067046133533-ed0c398d
+
+
+A user connected
+User disconnected

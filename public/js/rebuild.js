@@ -59,8 +59,34 @@ form.addEventListener('submit', async (e) => {
     }
 });
 
+function formatLog(text) {
+    if (!text) return '';
+
+    // 1. Escape HTML
+    let safeText = text.replace(/&/g, "&amp;")
+                       .replace(/</g, "&lt;")
+                       .replace(/>/g, "&gt;");
+
+    // 2. Parse ANSI Colors
+    safeText = safeText.replace(/\x1b\[(0;)?32m/g, '<span style="color:#00ff00;">'); // Green
+    safeText = safeText.replace(/\x1b\[(0;)?31m/g, '<span style="color:#ff4444;">'); // Red
+    safeText = safeText.replace(/\x1b\[(0;)?33m/g, '<span style="color:#ffff00;">'); // Yellow
+    safeText = safeText.replace(/\x1b\[(0;)?34m/g, '<span style="color:#4444ff;">'); // Blue
+    safeText = safeText.replace(/\x1b\[(0;)?36m/g, '<span style="color:#00ffff;">'); // Cyan
+    safeText = safeText.replace(/\x1b\[1m/g, '<span style="font-weight:bold;">');     // Bold
+
+    // Reset
+    safeText = safeText.replace(/\x1b\[0;0m/g, '</span>');
+    safeText = safeText.replace(/\x1b\[0m/g, '</span>');
+
+    // Remove remaining
+    safeText = safeText.replace(/\x1b\[[0-9;]*m/g, '');
+
+    return safeText;
+}
+
 socket.on('log', (msg) => {
-    logBox.innerHTML += msg;
+    logBox.innerHTML += formatLog(msg);
     logBox.scrollTop = logBox.scrollHeight;
 });
 

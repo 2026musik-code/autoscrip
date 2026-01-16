@@ -362,7 +362,7 @@ async function installScript(config, socketId) {
                 output += text;
                 socket.emit('log', text);
             }).stderr.on('data', (data) => {
-                socket.emit('log', `ERR: ${data}`);
+                socket.emit('log', data.toString());
             });
         });
 
@@ -418,7 +418,7 @@ app.post('/api/monitor', authMiddleware, (req, res) => {
     if (!serverConf) return res.status(404).json({ error: 'Server not found' });
 
     connectToSSH(serverConf, res, (conn) => {
-        conn.exec('vnstat --json; speedtest --json', (err, stream) => {
+        conn.exec('vnstat --json; speedtest --accept-license --accept-gdpr --json', (err, stream) => {
              if (err) { conn.end(); return res.status(500).json({ error: err.message }); }
              let output = '';
              stream.on('close', () => {
