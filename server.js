@@ -167,6 +167,72 @@ app.post('/api/install', (req, res) => {
     res.json({ message: 'Installation started', status: 'processing' });
 });
 
+// Rebuild VPS Endpoint
+app.post('/api/rebuild', (req, res) => {
+    const { ip, port, username, currentPassword, targetOS, targetVersion, newPassword } = req.body;
+    const socketId = req.headers['x-socket-id'];
+
+    if (!ip || !currentPassword || !targetOS || !targetVersion || !newPassword) {
+        return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    rebuildVPS({ ip, port: port || 22, username: username || 'root', currentPassword, targetOS, targetVersion, newPassword }, socketId);
+    res.json({ message: 'Rebuild started', status: 'processing' });
+});
+
+async function rebuildVPS(config, socketId) {
+    const conn = new Client();
+    const socket = io.to(socketId);
+
+    const sshConfig = {
+        host: config.ip,
+        port: config.port,
+        username: config.username,
+        password: config.currentPassword,
+        readyTimeout: 20000
+    };
+
+    conn.on('ready', () => {
+        socket.emit('log', `Connected to ${config.ip} for Rebuild...\n`);
+        socket.emit('log', `Target: ${config.targetOS} ${config.targetVersion}\n`);
+
+        // Command to download and run reinstall.sh
+        // Note: The script requires bash.
+        // Sanitize password (escape quotes)
+        const safePassword = config.newPassword.replace(/"/g, '\\"');
+
+        const cmd = `
+            curl -O https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.sh &&
+            chmod +x reinstall.sh &&
+            bash reinstall.sh ${config.targetOS} ${config.targetVersion} --password "${safePassword}" &&
+            reboot
+        `;
+
+        socket.emit('log', `Executing: bash reinstall.sh ${config.targetOS} ${config.targetVersion} ...\n`);
+
+        conn.exec(cmd, (err, stream) => {
+            if (err) {
+                socket.emit('log', `Exec Error: ${err.message}\n`);
+                conn.end();
+                return;
+            }
+            stream.on('close', (code, signal) => {
+                socket.emit('log', `\nProcess exited with code: ${code}.\nIf code is 0 (or undefined on reboot), VPS is rebooting into installer.\n`);
+                socket.emit('status', { status: 'rebuild_success' }); // different status key
+                conn.end();
+            }).on('data', (data) => {
+                socket.emit('log', data.toString());
+            }).stderr.on('data', (data) => {
+                socket.emit('log', data.toString());
+            });
+        });
+
+    }).on('error', (err) => {
+        socket.emit('log', `Connection Error: ${err.message}\n`);
+        socket.emit('status', { status: 'error' });
+    }).connect(sshConfig);
+}
+
 async function installScript(config, socketId) {
     const { ip, username, password, privateKey, authType, domain, os, licenseToken } = config;
     const conn = new Client();
